@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import jakarta.validation.Valid;
 
+// These codes can be very simplified.
+
 @Controller
 @RequestMapping("/search")
 public class SearchPageController {
