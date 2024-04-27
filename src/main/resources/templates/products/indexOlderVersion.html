@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>The Store</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        .btn-margin {
+            margin-right: 10px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+    </style>
+</head> 
+<body>
+<div class="container">
+    <div>
+        <h1 class="text-center my-4">Products</h1>
+    </div>
+
+    <div class="mb-5 d-flex justify-content-center mb-3">
+        <a class="btn btn-primary btn-margin" href="/products/create">Create Product</a>
+        <a class="btn btn-primary btn-margin" href="/">Main Page</a>
+        <a id="allProductsLink" class="btn btn-primary btn-margin" href="/products">All Products</a>
+    </div>
+
+    <div class="row mb-5">
+      <div class="col d-flex justify-content-center">
+          <form method="post" th:action="@{/search/saveText}" th:object="${searchingObject}">
+              <div class="row">
+                  <div class="col">
+                      <input id="searchInput" style="width: 200px;" class="form-control" th:field="${searchingObject.text}" placeholder="Search...">
+                  </div>
+                  <div class="col" style="width: 150px;">
+                      <select class="form-select" th:field="${searchingObject.category}">
+                          <option value="All">All</option>
+                          <option value="Phone">Phone</option>
+                          <option value="Laptop">Laptop</option>
+                          <option value="Other">Other</option>
+                      </select>
+                  </div>
+                  <div class="col">
+                      <button id="searched" type="submit" class="btn btn-primary">Submit</button>
+                  </div>
+              </div>
+          </form>
+      </div>
+    </div>
+
+    <div class="row mb-1 justify-content-between">
+        <div class="col-sm-2 mb-2 d-flex flex-column justify-content-center align-items-center">
+            <label for="sortBySelect">Sort By</label>
+            <select id="sortBySelect" class="form-select">
+                <option value="Highest Price">Highest Price</option>
+                <option value="Lowest Price">Lowest Price</option>
+                <option value="Highest ID">Highest ID</option>
+                <option value="Lowest ID">Lowest ID</option>
+            </select>
+        </div>
+        <div class="col-sm-2 d-flex align-items-center" style="padding: 10px;">
+            <div id="productCount"></div>
+        </div>
+    </div>
+        
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Brand</th>
+                <th>Name</th>
+                <th>Ram</th>
+                <th>Storage</th>
+                <th>Color</th>
+                <th>Price</th>
+                <th>Category</th>
+                <th>Configure</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="product : ${products}">
+                <td th:text="${product.id}"></td>
+                <td th:text="${product.brand}"></td>
+                <td th:text="${product.name}"></td>
+                <td th:text="@{${product.ram} + 'GB'}"></td>
+                <td th:text="@{${product.storage} + 'GB'}"></td>
+                <td th:text="${product.color}"></td>
+                <td th:text="@{${product.price} + 'TL'}"></td>
+                <td th:text="${product.category}"></td>
+                <td style="white-space:nowrap">
+                    <a class="btn btn-primary btn-sm"
+                       th:href="@{/products/edit(id=${product.id})}">Edit</a>
+                    <a class="btn btn-danger btn-sm"
+                       th:href="@{/products/delete(id=${product.id})}"
+                       onclick="return confirm('Are you sure you want to delete the item?')">Delete</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Arama yapıldıktan sonra input alanının değerini saklamak için bir değişken oluşturalım
+            var searchInputValue = localStorage.getItem('searchInputValue');
+
+            // Arama formunu seçelim
+            var searchForm = document.querySelector('form');
+
+            // Arama butonunu seçelim
+            var searchButton = document.getElementById('searched');
+
+            // Arama butonunun tıklama olayını dinleyelim
+            searchButton.addEventListener('click', function (event) {
+                // Formun varsayılan davranışını engelleyelim
+                event.preventDefault();
+
+                // Arama yapılan input alanını seçelim
+                var searchInput = document.getElementById('searchInput');
+
+                // Arama yapıldıktan sonra input alanının değerini saklayalım
+                searchInputValue = searchInput.value;
+
+                // Saklanan arama değerini yerel depolamaya kaydedelim
+                localStorage.setItem('searchInputValue', searchInputValue);
+
+                // Formu gönderelim
+                searchForm.submit();
+            });
+
+            var allProductsLink = document.getElementById('allProductsLink');
+            allProductsLink.addEventListener('click', function () {
+                // Arama input alanının değerini silelim
+                searchInput.value = '';
+                // Saklanan arama değerini de silmek için yerel depolamayı temizleyelim
+                localStorage.removeItem('searchInputValue');
+            });
+
+            // Input alanına saklanan arama değerini atayalım
+            var searchInput = document.getElementById('searchInput');
+            searchInput.value = searchInputValue;
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var selectElement = document.getElementById('sortBySelect');
+            var tbody = document.querySelector('tbody');
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+
+            // Select'in varsayılan değerini 'Highest Price' olarak ayarlayalım
+            selectElement.value = 'Highest Price';
+
+            // Sıralama fonksiyonunu çağıralım
+            sortRows();
+
+            // Select'teki değer değiştiğinde sıralama fonksiyonunu çağıralım
+            selectElement.addEventListener('change', function () {
+                sortRows();
+            });
+
+            // Sıralama fonksiyonu
+            function sortRows() {
+                var selectedValue = selectElement.value;
+
+                if (selectedValue === 'Highest Price') {
+                    rows.sort(function (a, b) {
+                        return parseFloat(b.cells[6].innerText) - parseFloat(a.cells[6].innerText);
+                    });
+                } else if (selectedValue === 'Lowest Price') {
+                    rows.sort(function (a, b) {
+                        return parseFloat(a.cells[6].innerText) - parseFloat(b.cells[6].innerText);
+                    });
+                } else if (selectedValue === 'Highest ID') {
+                    rows.sort(function (a, b) {
+                        return parseInt(b.cells[0].innerText) - parseInt(a.cells[0].innerText);
+                    });
+                } else if (selectedValue === 'Lowest ID') {
+                    rows.sort(function (a, b) {
+                        return parseInt(a.cells[0].innerText) - parseInt(b.cells[0].innerText);
+                    });
+                }
+
+                // Sıralanmış satırları tekrar tbody içine ekleyelim
+                rows.forEach(function (row) {
+                    tbody.appendChild(row);
+                });
+            }
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var rowCount = document.querySelectorAll('tbody tr').length;
+            var rowCountElement = document.getElementById('productCount');
+            rowCountElement.textContent = "Product count: " + rowCount;
+        });
+    </script>
+
+    <!-- <script>
+    document.getElementById("searched").addEventListener("click", function(event) {
+        var text = document.querySelector('input[name="text"]').value;
+        if(!text){
+        event.preventDefault();
+        alert("Search is empty!");
+        }
+    });
+    </script> -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+            crossorigin="anonymous"></script>
+
+</body>
+</html>
