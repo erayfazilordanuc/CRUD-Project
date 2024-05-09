@@ -3,6 +3,7 @@ package CRUD;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.*;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,9 @@ public class ProductsController {
     
     @Autowired
     private ProductRepo productRepo;
+
+    @Autowired
+    private ProductService productService;
 
     @GetMapping({"", "/"})
     public String showProductListSortByPrice(Model model){
@@ -91,7 +95,7 @@ public class ProductsController {
         return "redirect:/products";
     }
 
-    @GetMapping("/edit")
+    @GetMapping("/edit{id}")
     public String showEditPage(Model model, @RequestParam int id){
 
         try {
@@ -121,7 +125,7 @@ public class ProductsController {
 
     }
 
-    @PostMapping("/edit")
+    @PostMapping("/edit{id}")
     public String updateProduct(@Valid @ModelAttribute("productDto") ProductDTO productDto, BindingResult result, Model model, @RequestParam("id") int id){
         
         Product product = productRepo.findById(id).get();
@@ -180,7 +184,7 @@ public class ProductsController {
         return "redirect:/products";
     }
 
-    @GetMapping("/delete")
+    @GetMapping("/delete{id}")
     public String showDeletePage(@RequestParam int id){
 
         String uploadDir = "public/images/";
@@ -204,6 +208,131 @@ public class ProductsController {
         productRepo.deleteById(id);
 
         return "redirect:/products";
+    }
+    @GetMapping("/show")
+    public String showProduct(Model model, @RequestParam int id){
+
+        try {
+            
+            Product product = productRepo.findById(id).get();
+            model.addAttribute("product", product);
+
+            ProductDTO productDto = new ProductDTO();
+
+            productDto.setColor(product.getColor());
+            productDto.setStorage(product.getStorage());
+            productDto.setRam(product.getRam());
+            productDto.setCategory(product.getCategory());
+            productDto.setName(product.getName());
+            productDto.setBrand(product.getBrand());
+            productDto.setPrice(product.getPrice());
+
+            model.addAttribute("productDto", productDto);
+
+
+        } catch (Exception e) {
+            System.err.println(e.getStackTrace());                          //     "/edit" adresinin get ve post anotasyonlarında productDTO veri taşımayı sağlıyor yani önce veriler productDTO'ya eşitlenip productDTO üzerinde değiştirilip sonra asıl veriye tekrar tanımlanarak edit işltemi gerçekleştiriliyor
+            return "redirect:/products";
+        }
+
+        return "products/showProduct";
+
+    }
+
+    @PostMapping("/search")
+    public String saveText(@ModelAttribute("searchingObject") SearchingObject searchedObject, Model model) {
+
+        List<Product> searchedProducts = new ArrayList<Product>();
+        
+        List<Product> allProducts = productService.listAll();
+
+        String[] compressedProducts = new String[allProducts.size()];
+
+
+        for(int i=0; i<allProducts.size(); i++){
+            compressedProducts[i] = allProducts.get(i).getCompressed();
+        }
+
+        if(searchedObject.getCategory().equals("All")){
+
+            for(int i=0; i<compressedProducts.length; i++){
+                if(isIn(compressedProducts[i], searchedObject.getText())){
+                    searchedProducts.add(allProducts.get(i));
+                }
+            }
+
+        }else{
+
+            for(int i=0; i<compressedProducts.length; i++){
+                if(isIn(compressedProducts[i], searchedObject.getText()) && allProducts.get(i).getCategory().equals(searchedObject.getCategory())){
+                    searchedProducts.add(allProducts.get(i));
+                }
+            }
+
+        }
+
+        model.addAttribute("products", searchedProducts); // global değişkenden alınıyor (şimdilik)
+
+        SearchingObject searchingObject = new SearchingObject();
+        model.addAttribute("searchingObject", searchingObject);
+
+        return "products/index";
+    }
+
+    public boolean isIn(String text, String input){
+
+        //            Alternative
+        // if(input.equals("")){
+        // return true;
+        // }
+
+        if(input.length()==0 || input.isBlank()){
+            return true;
+        }
+        
+        // boolean isBlank = true;
+        // for(int i=0; i<input.length(); i++){
+        //     if((int)input.charAt(i)<33 || (int)input.charAt(i)==127){ // obj can be different
+        //         isBlank = false; // it means the input is not empty, filled
+        //     }
+        // }if(isBlank){
+        //     return true;
+        // }
+
+        String[] inputLetters = new String[input.length()];
+    
+        for(int i=0; i<input.length(); i++){
+            inputLetters[i] = Character.toString(input.charAt(i));
+        }
+    
+        int findedSame = 0;
+    
+        for(int i=0; i<text.length()-input.length()+1; i++){
+    
+            int k = i;
+    
+            Boolean isIt = true;
+    
+            if(Character.toString(text.charAt(i)).equalsIgnoreCase(inputLetters[0])){
+                for(int j=1; j<input.length(); j++){
+                    if(!Character.toString(text.charAt(++i)).equalsIgnoreCase(inputLetters[j])){
+    
+                        isIt = false;
+                        break;
+                    }
+                }
+                if(isIt){
+                    findedSame++;
+                }
+            }
+            i = k;
+        }
+        if(findedSame>0){
+            return true;
+        }else{
+            return false;
+        }
+
     }
 
     public int fileCounter(String uploadDir, String imageName){
